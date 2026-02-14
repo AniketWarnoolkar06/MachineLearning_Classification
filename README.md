@@ -176,6 +176,7 @@ A Streamlit app was developed to allow interactive model evaluation.
 
 ```bash
 streamlit run app.py
+```
 
 ---
 
