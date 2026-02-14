@@ -1,8 +1,6 @@
 import joblib
 import numpy as np
 from pathlib import Path
-import joblib
-import os
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -29,7 +27,8 @@ def train_logistic_with_tuning(
 
     log_reg = LogisticRegression(
         max_iter=1000,
-        class_weight="balanced"
+        class_weight="balanced",
+        random_state=42
     )
 
     pipeline = Pipeline(
@@ -41,7 +40,7 @@ def train_logistic_with_tuning(
 
     param_grid = {
         "classifier__C": [0.01, 0.1, 1, 10],
-        "classifier__solver": ["liblinear", "lbfgs"],
+        "classifier__solver": ["liblinear"],
     }
 
     grid = GridSearchCV(

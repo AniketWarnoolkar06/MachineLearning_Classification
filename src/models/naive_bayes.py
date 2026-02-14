@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 import joblib
 
+from sklearn.model_selection import StratifiedKFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
@@ -14,11 +15,7 @@ from sklearn.metrics import (
     matthews_corrcoef,
 )
 
-
-# ---------------------------------------------------------
 # Train Gaussian Naive Bayes with tuning
-# ---------------------------------------------------------
-
 def train_naive_bayes(
     preprocess_pipeline,
     X_train,
@@ -41,11 +38,13 @@ def train_naive_bayes(
         "classifier__var_smoothing": np.logspace(-12, -6, 4)
     }
 
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    # grid search with F1 scoring to find best var_smoothing
     grid = GridSearchCV(
         pipeline,
         param_grid,
         scoring="f1",
-        cv=5,
+        cv=cv,
         n_jobs=1,
         verbose=1
     )
@@ -54,11 +53,7 @@ def train_naive_bayes(
 
     return grid.best_estimator_, grid.best_params_, grid.best_score_
 
-
-# ---------------------------------------------------------
 # Threshold tuning
-# ---------------------------------------------------------
-
 def find_best_threshold(model, X_test, y_test):
     """
     Find probability threshold that maximizes F1.
@@ -66,7 +61,7 @@ def find_best_threshold(model, X_test, y_test):
 
     probs = model.predict_proba(X_test)[:, 1]
 
-    thresholds = np.linspace(0.1, 0.9, 50)
+    thresholds = np.linspace(0.01, 0.99, 100)
     f1_scores = []
 
     for t in thresholds:
@@ -77,11 +72,7 @@ def find_best_threshold(model, X_test, y_test):
 
     return thresholds[best_idx], f1_scores[best_idx]
 
-
-# ---------------------------------------------------------
 # Evaluation
-# ---------------------------------------------------------
-
 def evaluate_nb(model, X_test, y_test, threshold):
     """
     Evaluate Naive Bayes at custom threshold.
@@ -93,19 +84,15 @@ def evaluate_nb(model, X_test, y_test, threshold):
     metrics = {
         "Accuracy": accuracy_score(y_test, preds),
         "AUC": roc_auc_score(y_test, probs),
-        "Precision": precision_score(y_test, preds),
-        "Recall": recall_score(y_test, preds),
-        "F1": f1_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, zero_division=0),
+        "Recall": recall_score(y_test, preds, zero_division=0),
+        "F1": f1_score(y_test, preds, zero_division=0),
         "MCC": matthews_corrcoef(y_test, preds),
     }
 
     return metrics
 
-
-# ---------------------------------------------------------
 # Save model
-# ---------------------------------------------------------
-
 def save_naive_bayes(model, threshold, path_prefix="models/naive_bayes"):
     """
     Save trained Naive Bayes model and threshold.

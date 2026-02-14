@@ -15,26 +15,42 @@ class BankFeatureEngineer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
 
-        X["prev_contacted"] = (X["pdays"] != -1).astype(int)
+        if "pdays" in X.columns:
+            X["prev_contacted"] = (X["pdays"] != -1).astype(int)
 
-        X["campaign_bin"] = pd.cut(
-            X["campaign"],
-            bins=[0, 1, 3, np.inf],
-            labels=["once", "few", "many"]
-        )
+        if "campaign" in X.columns:
+            X["campaign_bin"] = pd.cut(
+                X["campaign"],
+                bins=[0, 1, 3, np.inf],
+                labels=["once", "few", "many"]
+            ).astype(str)
 
-        X["age_group"] = pd.cut(
-            X["age"],
-            bins=[0, 30, 45, 60, 100],
-            labels=["young", "mid", "senior", "old"]
-        )
+        if "age" in X.columns:
+            X["age_group"] = pd.cut(
+                X["age"],
+                bins=[0, 30, 45, 60, 100],
+                labels=["young", "mid", "senior", "old"]
+            ).astype(str)
+        
+        # Clip extreme values
+        for col in ["balance", "campaign", "pdays", "previous"]:
+            if col in X.columns:
+                X[col] = X[col].clip(lower=X[col].quantile(0.01), upper=X[col].quantile(0.99))
 
-        X["balance_log"] = np.sign(X["balance"]) * np.log1p(np.abs(X["balance"]))
+        # Log transform
+        if "balance" in X.columns:
+            X["balance_log"] = np.sign(X["balance"]) * np.log1p(np.abs(X["balance"]))
+            X = X.drop(columns=["balance"])
 
         return X
 
 
 def split_data(df):
+    """
+    Splits data into train/test sets.
+    Removes leakage column 'duration'.
+    Encodes target variable.
+    """
     X = df.drop(columns=["y", "duration"])
     y = df["y"].map({"no": 0, "yes": 1})
 
@@ -47,15 +63,21 @@ def split_data(df):
 
 
 def build_baseline_preprocessor(num_cols, cat_cols):
+    num_cols_local = num_cols + ["balance_log"]
+    cat_cols_local = cat_cols + ["campaign_bin", "age_group", "prev_contacted"]
     return ColumnTransformer(
         transformers=[
-            ("num", StandardScaler(), num_cols),
-            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+            ("num", StandardScaler(), num_cols_local),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols_local),
         ]
     )
+
 
 
 def build_enhanced_pipeline(num_cols, cat_cols):
+    # along with engineered features
+    num_cols_local = num_cols + ["balance_log"]
+    cat_cols_local = cat_cols + ["campaign_bin", "age_group", "prev_contacted"]
     return Pipeline(
         steps=[
             ("feature_engineering", BankFeatureEngineer()),
@@ -63,8 +85,8 @@ def build_enhanced_pipeline(num_cols, cat_cols):
                 "preprocessor",
                 ColumnTransformer(
                     transformers=[
-                        ("num", StandardScaler(), num_cols),
-                        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+                        ("num", StandardScaler(), num_cols_local),
+                        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols_local),
                     ]
                 ),
             ),
@@ -72,12 +94,10 @@ def build_enhanced_pipeline(num_cols, cat_cols):
     )
 
 
-def build_tree_nb_pipeline(num_cols, cat_cols):
-    """
-    Preprocessing pipeline WITHOUT scaling for tree-based models
-    and Naive Bayes.
-    """
-
+def build_non_scaled_pipeline(num_cols, cat_cols):
+    # Add engineered features
+    num_cols_local = num_cols + ["balance_log"]
+    cat_cols_local = cat_cols + ["campaign_bin", "age_group", "prev_contacted"]
     return Pipeline(
         steps=[
             ("feature_engineering", BankFeatureEngineer()),
@@ -85,10 +105,11 @@ def build_tree_nb_pipeline(num_cols, cat_cols):
                 "preprocessor",
                 ColumnTransformer(
                     transformers=[
-                        ("num", "passthrough", num_cols),   # NO scaling
-                        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+                        ("num", "passthrough", num_cols_local),
+                        ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols_local),
                     ]
                 ),
             ),
         ]
     )
+

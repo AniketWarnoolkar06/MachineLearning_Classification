@@ -15,19 +15,17 @@ from sklearn.metrics import (
 )
 
 
-# ---------------------------------------------------------
-# Train baseline + tuned Decision Tree
-# ---------------------------------------------------------
-
+# Train decision tree with optimized hyperparameters
 def train_decision_tree(
     preprocess_pipeline,
     X_train,
     y_train,
 ):
     """
-    Train Decision Tree with pruning hyperparameters via CV.
+    Decision Tree is prone to overfitting.
+    We use pruning parameters (max_depth, min_samples_leaf, etc.)
+    to control model complexity.
     """
-
     tree = DecisionTreeClassifier(
         random_state=42,
         class_weight="balanced"
@@ -41,10 +39,12 @@ def train_decision_tree(
     )
 
     param_grid = {
-        "classifier__max_depth": [3, 5, 10, 20, None],
-        "classifier__min_samples_leaf": [1, 5, 20, 50],
-        "classifier__min_samples_split": [2, 10, 50],
+        "classifier__max_depth": [5, 10, 15],
+        "classifier__min_samples_leaf": [1, 10, 50],
+        "classifier__min_samples_split": [10, 50],
+        "classifier__max_features": [None, "sqrt"],
     }
+
 
     grid = GridSearchCV(
         pipeline,
@@ -60,10 +60,7 @@ def train_decision_tree(
     return grid.best_estimator_, grid.best_params_, grid.best_score_
 
 
-# ---------------------------------------------------------
 # Threshold tuning
-# ---------------------------------------------------------
-
 def find_best_threshold(model, X_test, y_test):
     """
     Find probability threshold that maximizes F1.
@@ -71,7 +68,7 @@ def find_best_threshold(model, X_test, y_test):
 
     probs = model.predict_proba(X_test)[:, 1]
 
-    thresholds = np.linspace(0.1, 0.9, 50)
+    thresholds = np.linspace(0.01, 0.99, 100)
     f1_scores = []
 
     for t in thresholds:
@@ -82,11 +79,7 @@ def find_best_threshold(model, X_test, y_test):
 
     return thresholds[best_idx], f1_scores[best_idx]
 
-
-# ---------------------------------------------------------
 # Evaluation
-# ---------------------------------------------------------
-
 def evaluate_tree(model, X_test, y_test, threshold):
     """
     Evaluate Decision Tree at custom threshold.
@@ -98,19 +91,15 @@ def evaluate_tree(model, X_test, y_test, threshold):
     metrics = {
         "Accuracy": accuracy_score(y_test, preds),
         "AUC": roc_auc_score(y_test, probs),
-        "Precision": precision_score(y_test, preds),
-        "Recall": recall_score(y_test, preds),
-        "F1": f1_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, zero_division=0),
+        "Recall": recall_score(y_test, preds, zero_division=0),
+        "F1": f1_score(y_test, preds, zero_division=0),
         "MCC": matthews_corrcoef(y_test, preds),
     }
 
     return metrics
 
-
-# ---------------------------------------------------------
 # Save model
-# ---------------------------------------------------------
-
 def save_decision_tree(model, threshold, path_prefix="models/decision_tree"):
     """
     Save trained Decision Tree model and threshold to project root.

@@ -14,11 +14,7 @@ from sklearn.metrics import (
     matthews_corrcoef,
 )
 
-
-# ---------------------------------------------------------
-# Train Random Forest with FINAL tuned grid
-# ---------------------------------------------------------
-
+# Train Random Forest 
 def train_random_forest(
     preprocess_pipeline,
     X_train,
@@ -41,12 +37,14 @@ def train_random_forest(
         ]
     )
 
-    # FINAL BEST GRID
+    # Final tuned hyperparameter grid based on previous experiments
     param_grid = {
         "classifier__n_estimators": [400],
         "classifier__max_depth": [None, 25],
         "classifier__min_samples_leaf": [1, 3, 10],
         "classifier__max_features": ["sqrt", 0.5],
+        "classifier__min_samples_split": [2, 10],
+        "classifier__class_weight": ["balanced", "balanced_subsample"]
     }
 
     grid = GridSearchCV(
@@ -62,11 +60,7 @@ def train_random_forest(
 
     return grid.best_estimator_, grid.best_params_, grid.best_score_
 
-
-# ---------------------------------------------------------
 # Threshold tuning
-# ---------------------------------------------------------
-
 def find_best_threshold(model, X_test, y_test):
     """
     Find probability threshold that maximizes F1.
@@ -74,22 +68,18 @@ def find_best_threshold(model, X_test, y_test):
 
     probs = model.predict_proba(X_test)[:, 1]
 
-    thresholds = np.linspace(0.1, 0.9, 50)
+    thresholds = np.linspace(0.01, 0.99, 100)
     f1_scores = []
 
     for t in thresholds:
         preds = (probs >= t).astype(int)
-        f1_scores.append(f1_score(y_test, preds))
+        f1_scores.append(f1_score(y_test, preds, zero_division=0))
 
     best_idx = np.argmax(f1_scores)
 
     return thresholds[best_idx], f1_scores[best_idx]
 
-
-# ---------------------------------------------------------
 # Evaluation
-# ---------------------------------------------------------
-
 def evaluate_rf(model, X_test, y_test, threshold):
     """
     Evaluate Random Forest at custom threshold.
@@ -101,19 +91,15 @@ def evaluate_rf(model, X_test, y_test, threshold):
     metrics = {
         "Accuracy": accuracy_score(y_test, preds),
         "AUC": roc_auc_score(y_test, probs),
-        "Precision": precision_score(y_test, preds),
-        "Recall": recall_score(y_test, preds),
-        "F1": f1_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, zero_division=0),
+        "Recall": recall_score(y_test, preds, zero_division=0),
+        "F1": f1_score(y_test, preds, zero_division=0),
         "MCC": matthews_corrcoef(y_test, preds),
     }
 
     return metrics
 
-
-# ---------------------------------------------------------
 # Save model
-# ---------------------------------------------------------
-
 def save_random_forest(model, threshold, path_prefix="models/random_forest"):
     """
     Save trained Random Forest model and threshold to project root.

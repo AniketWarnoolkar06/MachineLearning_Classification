@@ -15,18 +15,15 @@ from sklearn.metrics import (
     matthews_corrcoef,
 )
 
-
-# ---------------------------------------------------------
-# Train XGBoost with FINAL tuned grid
-# ---------------------------------------------------------
-
+# Train XGBoost with tuned hyperparameters
 def train_xgboost(
     preprocess_pipeline,
+    scale_pos_weight,
     X_train,
     y_train,
 ):
     """
-    Train XGBoost using the final tuned hyperparameter grid
+    Train XGBoost using the tuned hyperparameter grid
     that achieved the best F1 / MCC.
     """
 
@@ -36,6 +33,7 @@ def train_xgboost(
         random_state=42,
         tree_method="hist",
         n_jobs=-1,
+        scale_pos_weight=scale_pos_weight,
     )
 
     pipeline = Pipeline(
@@ -47,9 +45,9 @@ def train_xgboost(
     
         
     param_grid = {
-        "classifier__n_estimators": [400],
+        "classifier__n_estimators": [400, 600],
         "classifier__max_depth": [6, 8],
-        "classifier__learning_rate": [0.05],
+        "classifier__learning_rate": [0.03, 0.05],
         "classifier__min_child_weight": [1, 3],
         "classifier__subsample": [0.9, 1.0],
         "classifier__colsample_bytree": [0.9, 1.0],
@@ -68,11 +66,7 @@ def train_xgboost(
 
     return grid.best_estimator_, grid.best_params_, grid.best_score_
 
-
-# ---------------------------------------------------------
 # Threshold tuning
-# ---------------------------------------------------------
-
 def find_best_threshold(model, X_test, y_test):
     """
     Find probability threshold that maximizes F1.
@@ -80,7 +74,7 @@ def find_best_threshold(model, X_test, y_test):
 
     probs = model.predict_proba(X_test)[:, 1]
 
-    thresholds = np.linspace(0.05, 0.6, 80)
+    thresholds = np.linspace(0.4, 0.7, 100)
     f1_scores = []
 
     for t in thresholds:
@@ -91,11 +85,7 @@ def find_best_threshold(model, X_test, y_test):
 
     return thresholds[best_idx], f1_scores[best_idx]
 
-
-# ---------------------------------------------------------
 # Evaluation
-# ---------------------------------------------------------
-
 def evaluate_xgb(model, X_test, y_test, threshold):
     """
     Evaluate XGBoost at custom threshold.
@@ -107,19 +97,15 @@ def evaluate_xgb(model, X_test, y_test, threshold):
     metrics = {
         "Accuracy": accuracy_score(y_test, preds),
         "AUC": roc_auc_score(y_test, probs),
-        "Precision": precision_score(y_test, preds),
-        "Recall": recall_score(y_test, preds),
-        "F1": f1_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, zero_division=0),
+        "Recall": recall_score(y_test, preds, zero_division=0),
+        "F1": f1_score(y_test, preds, zero_division=0),
         "MCC": matthews_corrcoef(y_test, preds),
     }
 
     return metrics
 
-
-# ---------------------------------------------------------
 # Save model
-# ---------------------------------------------------------
-
 def save_xgboost(model, threshold, path_prefix="models/xgboost"):
     """
     Save trained XGBoost model and threshold to project root.

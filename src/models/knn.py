@@ -14,18 +14,14 @@ from sklearn.metrics import (
     matthews_corrcoef,
 )
 
-
-# ---------------------------------------------------------
-# Train KNN with CV tuning
-# ---------------------------------------------------------
-
+# Train KNN with tuned hyperparameters
 def train_knn(
     preprocess_pipeline,
     X_train,
     y_train,
 ):
     """
-    Train KNN with cross-validated hyperparameter tuning.
+    Train KNN with GridSearchCV to find best hyperparameters. Returns best model, params, and CV F1 score.
     """
 
     knn = KNeighborsClassifier()
@@ -38,7 +34,7 @@ def train_knn(
     )
 
     param_grid = {
-        "classifier__n_neighbors": [5, 10, 25, 50],
+        "classifier__n_neighbors": [10, 25, 50],
         "classifier__weights": ["uniform", "distance"],
         "classifier__metric": ["euclidean", "manhattan"],
     }
@@ -57,10 +53,7 @@ def train_knn(
     return grid.best_estimator_, grid.best_params_, grid.best_score_
 
 
-# ---------------------------------------------------------
 # Threshold tuning
-# ---------------------------------------------------------
-
 def find_best_threshold(model, X_test, y_test):
     """
     Find probability threshold that maximizes F1.
@@ -68,7 +61,7 @@ def find_best_threshold(model, X_test, y_test):
 
     probs = model.predict_proba(X_test)[:, 1]
 
-    thresholds = np.linspace(0.1, 0.9, 50)
+    thresholds = np.linspace(0.01, 0.99, 100)
     f1_scores = []
 
     for t in thresholds:
@@ -79,11 +72,7 @@ def find_best_threshold(model, X_test, y_test):
 
     return thresholds[best_idx], f1_scores[best_idx]
 
-
-# ---------------------------------------------------------
 # Evaluation
-# ---------------------------------------------------------
-
 def evaluate_knn(model, X_test, y_test, threshold):
     """
     Evaluate KNN at custom threshold.
@@ -95,18 +84,14 @@ def evaluate_knn(model, X_test, y_test, threshold):
     metrics = {
         "Accuracy": accuracy_score(y_test, preds),
         "AUC": roc_auc_score(y_test, probs),
-        "Precision": precision_score(y_test, preds),
-        "Recall": recall_score(y_test, preds),
-        "F1": f1_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, zero_division=0),
+        "Recall": recall_score(y_test, preds, zero_division=0),
+        "F1": f1_score(y_test, preds, zero_division=0),
         "MCC": matthews_corrcoef(y_test, preds),
     }
 
     return metrics
 
-
-# ---------------------------------------------------------
-# Save model
-# ---------------------------------------------------------
 
 def save_knn(model, threshold, path_prefix="models/knn"):
     """
