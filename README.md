@@ -176,3 +176,11 @@ A Streamlit app was developed to allow interactive model evaluation.
 
 ```bash
 streamlit run app.py
+
+---
+
+## Deployment
+
+The Streamlit application is deployed and available here:
+
+https://machinelearningclassification-kpsaehclcg2cmsospdgwat.streamlit.app
