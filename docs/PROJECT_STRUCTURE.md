@@ -5,11 +5,11 @@ This document provides an overview of the project organization and the purpose o
 ```
 MachineLearning_Classification/
 │
+├── .python-version             # Local Python version (pyenv), e.g. 3.10.x
+├── runtime.txt                 # Streamlit Cloud runtime (python-3.10)
 ├── README.md                   # Project overview and results summary
+├── app.py                      # Streamlit app entrypoint (model evaluation UI)
 ├── requirements.txt            # Python dependencies
-│
-├── app/                        # Streamlit web application
-│   └── app.py                  # Main Streamlit app for model evaluation
 │
 ├── data/                       # Data directory
 │   ├── raw/                    # Original, unprocessed data
@@ -18,12 +18,8 @@ MachineLearning_Classification/
 │       └── bank_test.csv       # Held-out test set for evaluation
 │
 ├── models/                     # Saved models and configuration
-│   ├── decision_tree_threshold.txt     # Optimal threshold for Decision Tree
-│   ├── knn_threshold.txt               # Optimal threshold for KNN
-│   ├── logistic_threshold.txt          # Optimal threshold for Logistic Regression
-│   ├── naive_bayes_threshold.txt       # Optimal threshold for Naive Bayes
-│   ├── random_forest_threshold.txt     # Optimal threshold for Random Forest
-│   └── xgboost_threshold.txt           # Optimal threshold for XGBoost
+│   ├── *_model.pkl                     # Trained model pipelines (joblib/pickle)
+│   └── *_threshold.txt                 # Optimal thresholds (tuned for F1-score)
 │
 ├── notebooks/                  # Jupyter notebooks for analysis and modeling
 │   ├── 01_data_inspection.ipynb        # Data exploration and EDA
@@ -57,18 +53,21 @@ MachineLearning_Classification/
 │   ├── USAGE.md                # Usage guide
 │   └── PROJECT_STRUCTURE.md    # This file
 │
-└── venv/                       # Virtual environment (not tracked in git)
+└── venv/                       # Virtual environment (local; typically not committed)
 ```
 
 ---
 
 ## Directory Descriptions
 
-### `app/`
-Contains the Streamlit web application for interactive model evaluation.
+### `app.py`
+The Streamlit web application for interactive model evaluation.
 
-**Key File:**
-- `app.py` - Main application that allows users to upload test data and evaluate trained models
+It allows you to:
+- Upload a test CSV
+- Pick a trained model
+- Evaluate metrics and view plots (confusion matrix / ROC)
+- Download predictions
 
 ### `data/`
 Stores all datasets used in the project.
@@ -82,14 +81,16 @@ Stores all datasets used in the project.
 - `bank_test.csv` - Held-out test set (not used during training)
 
 ### `models/`
-Contains saved model artifacts and configuration files.
+Contains saved model artifacts and threshold configuration files.
 
 **Threshold Files:**
 - Store optimal probability thresholds for each model
 - Used to improve performance on imbalanced data
 - Thresholds were tuned to maximize F1-score on validation data
 
-**Note:** Trained model `.pkl` files are typically stored here but may be excluded from version control due to size.
+**Model Files:**
+- `*_model.pkl` - Trained model pipelines saved via `joblib`
+- `*_threshold.txt` - Tuned probability thresholds (used instead of default 0.5)
 
 ### `notebooks/`
 Jupyter notebooks for experimentation, analysis, and documentation.
@@ -187,7 +188,7 @@ Specifies files and directories to exclude from version control:
 - Select best performer (XGBoost)
 
 ### 4. Deployment
-- Use Streamlit app (`app/app.py`)
+- Use Streamlit app (`app.py`)
 - Upload test data
 - Evaluate models interactively
 - View metrics and visualizations

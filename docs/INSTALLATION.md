@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Python**: Version 3.8 or higher
+- **Python**: 3.10 recommended (matches `runtime.txt` / `.python-version`)
 - **pip**: Python package installer
 - **Git**: For cloning the repository
 
@@ -12,6 +12,8 @@
 git clone <repository-url>
 cd MachineLearning_Classification
 ```
+
+If you've already cloned the repo, just `cd` into the project root.
 
 ## Step 2: Create a Virtual Environment
 
@@ -38,15 +40,12 @@ pip install -r requirements.txt
 ```
 
 ### Required Packages:
-- `pandas` - Data manipulation
-- `numpy` - Numerical computations
-- `scikit-learn` - Machine learning models
-- `xgboost` - Gradient boosting model
-- `matplotlib` - Data visualization
-- `seaborn` - Statistical visualizations
 - `streamlit` - Web app framework
-- `joblib` - Model serialization
-- `imbalanced-learn` - Handling imbalanced datasets
+- `pandas`, `numpy` - Data handling
+- `scikit-learn`, `scipy` - ML and scientific computing
+- `xgboost` - Gradient boosting model
+- `matplotlib` - Plots in the Streamlit app
+- `joblib` - Model loading
 
 ## Step 4: Verify Installation
 
@@ -60,6 +59,12 @@ Or run a quick test:
 
 ```bash
 python -c "import pandas, numpy, sklearn, xgboost, streamlit; print('All packages installed successfully!')"
+```
+
+Optionally verify Streamlit starts:
+
+```bash
+streamlit --version
 ```
 
 ## Step 5: Set Up Jupyter (Optional)
@@ -89,6 +94,13 @@ pip install jupyterlab
 ### Issue: XGBoost installation fails
 - On macOS: Install with `brew install libomp` first
 - On Windows: May require Microsoft Visual C++ Build Tools
+
+### Issue: Streamlit app can't find model files
+Run Streamlit from the project root (the folder that contains `app.py`, `models/`, and `data/`):
+
+```bash
+streamlit run app.py
+```
 
 ## Next Steps
 

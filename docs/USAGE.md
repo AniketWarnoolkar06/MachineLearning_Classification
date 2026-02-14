@@ -3,6 +3,7 @@
 ## Table of Contents
 1. [Running Jupyter Notebooks](#running-jupyter-notebooks)
 2. [Running the Streamlit App](#running-the-streamlit-app)
+3. [Deployment](#deployment)
 3. [Understanding Model Threshold Files](#understanding-model-threshold-files)
 4. [Working with Test Data](#working-with-test-data)
 
@@ -66,12 +67,15 @@ The Streamlit app provides an interactive dashboard for evaluating trained model
 
 3. **Run the Streamlit app**:
    ```bash
-   streamlit run app/app.py
+   streamlit run app.py
    ```
 
 4. **Access the app**: The app will automatically open in your browser at `http://localhost:8501`
 
 ### Using the App:
+
+0. **(Optional) Download sample test data**
+   - The app provides a **Download Sample Test File** button (from `data/test/bank_test.csv`) when available.
 
 1. **Upload Test Data**: 
    - Click "Browse files" and upload your test CSV file
@@ -91,7 +95,7 @@ The Streamlit app provides an interactive dashboard for evaluating trained model
      - Evaluation metrics (Accuracy, Precision, Recall, F1-score, MCC, AUC-ROC)
      - Confusion matrix
      - Classification report
-     - Model performance visualization
+   - ROC curve
 
 4. **Compare Models**: You can re-run with different models to compare performance.
 
@@ -104,9 +108,22 @@ The Streamlit app provides an interactive dashboard for evaluating trained model
 
 ---
 
+## Deployment
+
+The Streamlit application is deployed here:
+
+https://machinelearningclassification-kpsaehclcg2cmsospdgwat.streamlit.app
+
+---
+
 ## Understanding Model Threshold Files
 
-The `models/` directory contains threshold files for each model:
+The `models/` directory contains both trained models and threshold files:
+
+- `*_model.pkl` (example: `xgboost_model.pkl`)
+- `*_threshold.txt` (example: `xgboost_threshold.txt`)
+
+Threshold files for each model:
 - `logistic_threshold.txt`
 - `decision_tree_threshold.txt`
 - `knn_threshold.txt`
@@ -152,6 +169,8 @@ Your test CSV file should have:
 - All feature columns used during training
 - A `y` column with ground truth labels (`yes` or `no`)
 
+If the feature columns do not match what the selected model expects (for example, missing columns or extra columns), the model may fail during prediction.
+
 ### Example Structure:
 ```
 age,job,marital,education,balance,...,y
@@ -178,7 +197,7 @@ source venv/bin/activate
 jupyter notebook
 
 # Run Streamlit app
-streamlit run app/app.py
+streamlit run app.py
 
 # Deactivate environment
 deactivate
